@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COVID-19 Dashboard</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+    <script src="https://code.highcharts.com/maps/highmaps.js"></script>
+    <script src="https://code.highcharts.com/maps/modules/data.js"></script>
+    <script src="https://code.highcharts.com/maps/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/maps/modules/offline-exporting.js"></script>
+    <script src="https://code.highcharts.com/mapdata/custom/world.js"></script>
+    <link rel="stylesheet" type="text/css" href="//github.com/downloads/lafeber/world-flags-sprite/flags32.css" />
+    
+
+<style>
+ nav a:hover{
+     text-decoration: none!important;
+ }
+ #container {
+height: 500px; 
+/* width: 800px;  */
+margin: 0 auto; 
+}
+.highcharts-tooltip>span {
+    padding: 10px;
+    white-space: normal !important;
+    width: 200px;
+}
+.loading {
+    margin-top: 10em;
+    text-align: center;
+    color: gray;
+}
+.f32 .flag {
+    vertical-align: middle !important;
+}
+#countryname::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+#countryname::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+/* Handle */
+#countryname::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 20px;
+  border: 2px solid #f1f1f1;
+}
+
+/* Handle on hover */
+#countryname::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+    </style>
+</head>
+<body>
+     <div>
+        <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+            <a href="/"><span style="font-size: 30px;">COVID-19 DashBoard</span></a>
+        </nav>
+    </div>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-3 col-sm-12 col-xm-12" id="countryname" style="max-height:550px;overflow: scroll;overflow-x:hidden;float: left;">
+                <div class="my-4" style="background-color: black;color: white;padding: 5px;text-align: center;">
+                    <h6>Total infected count : {{totalCount}}</h6>
+                </div>
+                <div class="d-flex text-center">
+                    <div>
+                        <!-- <form method="post" enctype="multipart/form-data" action="selectCountry"> -->
+                            <!-- {% csrf_token %} -->
+                            {% for con in countryNames %}
+                            <table style="border-width: 2px; border: #333;">
+                            <tr>
+                                <input type="submit" class="btn btn-outline-success" value={{con}} name="countryName" style="width:100px;">
+                            </tr>
+                            </table>
+                            {% endfor %}
+                        <!-- </form> -->
+                    </div>
+                    <div>
+                        <canvas id="myChart" style="width:100%!important;height: 5900px;"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-9 col-sm-12 col-xm-12">
+               <div class="mt-4">
+                   <!-- {% if showMap == 'True' %} -->
+                    <div id="container"></div>
+                   <!-- {% elif  showMap == 'False'%} -->
+                      <!-- <h3 class="text-center">Analysis on {{countryName}}</h3>  -->
+                      <!-- <div class="bg-primary"> -->
+                          <!-- <canvas id="lineChart" style="width:100%;"></canvas> -->
+                      <!-- </div> -->
+                    <!-- {%endif%} -->
+               </div>
+            </div> 
+           
+        </div>
+    </div>
+
+<script>
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var chartOptions = {
+        legend: {
+            display: false
+                },
+        scales: {
+            xAxes: [{
+                barPercentage:1
+                }],
+            yAxes: [
+                    {ticks: {display:false}},
+                    {display: false},
+                    
+                    ],
+        elements: {
+            rectangle: {
+            borderSkipped: 'left',
+            }
+        }
+        }
+    };
+    var chart = new Chart(ctx, {
+    type: 'horizontalBar',
+    data: {
+        labels:{{countryNames|safe}},
+        //Here is used to render it into JS
+        datasets: [{
+            label: 'Latest Infected Count',
+            backgroundColor: 'rgb(255, 99, 132)',
+            borderColor: 'rgb(255, 99, 132)',
+            data:{{ barPlotVals|safe}}
+        }]
+    },
+    options:  chartOptions
+});
+</script> 
+
+<script>
+var data2={{dataForMap|safe}};
+Highcharts.getJSON('https://cdn.jsdelivr.net/gh/highcharts/highcharts@v7.0.0/samples/data/world-population-density.json', function (data) {
+
+// Prevent logarithmic errors in color calulcation
+data.forEach(function (p) {
+    p.value = (p.value < 1 ? 1 : p.value);
+});
+
+// Initiate the chart
+Highcharts.mapChart('container', {
+    chart: {
+        map: 'custom/world'
+    },
+    title: {
+        text: 'Infected Map Graph of World'
+    },
+    legend: {
+        title: {
+            text: 'Population density per km²',
+            style: {
+                color: ( // theme
+                    Highcharts.defaultOptions &&
+                    Highcharts.defaultOptions.legend &&
+                    Highcharts.defaultOptions.legend.title &&
+                    Highcharts.defaultOptions.legend.title.style &&
+                    Highcharts.defaultOptions.legend.title.style.color
+                ) || 'black'
+            }
+        }
+    },
+
+    mapNavigation: {
+        enabled: true,
+        buttonOptions: {
+            verticalAlign: 'bottom'
+        }
+    },
+
+    tooltip: {
+        backgroundColor: 'none',
+        borderWidth: 0,
+        shadow: false,
+        useHTML: true,
+        padding: 0,
+        pointFormat: '<span class="f32"><span class="flag {point.properties.hc-key}">' +
+            '</span></span> {point.name}<br>' +
+            '<span style="font-size:30px">{point.value}</span>',
+        positioner: function () {
+            return { x: 0, y: 250 };
+        }
+    },
+
+    colorAxis: {
+        min: 1,
+        max: 1000,
+        type: 'logarithmic'
+    },
+
+    series: [{
+        data: data2,
+        joinBy: ['iso-a3', 'code3'],
+        name: 'Infected Population',
+        states: {
+            hover: {
+                color: '#a4edba'
+            }
+        }
+    }]
+});
+});
+
+</script>
+
+
+
+<script>
+    // var ctx2 = document.getElementById('lineChart').getContext('2d');  
+    // var chartOptions3= {
+    //         legend: {
+    //             display: true
+    //                 },
+    //                 scales: {
+	// 					yAxes: [{
+	// 						type: 'linear',
+	// 						display: true,
+	// 						position: 'left',
+	// 						id: 'y-axis-1',
+	// 					}, {
+	// 						type: 'linear', 
+	// 						display: true,
+	// 						position: 'right',
+	// 						id: 'y-axis-2',
+	// 						gridLines: {
+	// 							drawOnChartArea: false, // only want the grid lines for one axis to show up
+	// 						},
+	// 					}],
+	// 				},
+    //     };
+    // var data3={{datasetsForLine|safe}};
+	// var myLineChart = new Chart(ctx2, {
+    //     type: 'line',
+    //     data: {labels:{{axisvalues|safe}},datasets:data3,},
+    //     options: chartOptions3
+    // });
+</script>
+</body>
+</html>
